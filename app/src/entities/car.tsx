@@ -11,6 +11,7 @@ import {
   useState,
   useMemo,
 } from "react";
+import type { ForwardRefRenderFunction } from "react";
 import {
   Object3D,
   Vector3,
@@ -38,10 +39,10 @@ export type CarHandle = {
  * @param position - 차량의 초기 위치
  */
 
-const Car = forwardRef<CarHandle, CarProps>(function Car(
+const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
   { position = [0, 0, 0], keyQueue, maxHeight },
   ref
-) {
+) => {
   const { world } = useRapier();
 
   // ===============================
@@ -1081,6 +1082,8 @@ const Car = forwardRef<CarHandle, CarProps>(function Car(
       </mesh> */}
     </>
   );
-});
+};
+
+const Car = forwardRef<CarHandle, CarProps>(CarInner);
 
 export default Car;

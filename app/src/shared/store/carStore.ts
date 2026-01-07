@@ -1,5 +1,11 @@
 import { create } from "zustand";
 
+// 랩 기록 타입
+export type LapRecord = {
+  lapNumber: number; // 랩 번호 (1부터 시작)
+  lapTime: number; // 랩 시간 (ms)
+};
+
 type CarState = {
   // 차량 위치
   position: { x: number; y: number; z: number } | null;
@@ -18,7 +24,13 @@ type CarState = {
   detectedDistance: number | null;
   // 감지된 오브젝트 여부
   detectedObject: boolean;
-  lapTime: number;
+
+  // 랩 타임 시스템
+  totalLaps: number; // 총 바퀴 수 (설정 가능)
+  currentLap: number; // 현재 랩 (0이면 아직 시작 전)
+  lapStartTime: number | null; // 현재 랩 시작 시간
+  lapRecords: LapRecord[]; // 완료된 랩 기록
+  raceStartTime: number | null; // 경주 시작 시간
 };
 
 type CarActions = {
@@ -33,10 +45,18 @@ type CarActions = {
   setDetectedObject: (detected: boolean) => void;
   incrementScore: () => void;
   resetScore: () => void;
-  setLapTime: (lapTime: number) => void;
+
+  // 랩 타임 관련 액션
+  setTotalLaps: (laps: number) => void;
+  startLap: () => void;
+  completeLap: () => void;
+  resetRace: () => void;
+  getCurrentLapTime: () => number;
+  getBestLapTime: () => number | null;
+  getTotalTime: () => number;
 };
 
-export const useCarStore = create<CarState & CarActions>((set) => ({
+export const useCarStore = create<CarState & CarActions>((set, get) => ({
   // 초기 상태
   position: null,
   savePointId: 0,
@@ -47,7 +67,13 @@ export const useCarStore = create<CarState & CarActions>((set) => ({
   driftGauge: 0,
   detectedDistance: null,
   detectedObject: false,
-  lapTime: performance.now(),
+
+  // 랩 타임 초기 상태
+  totalLaps: 3,
+  currentLap: 0,
+  lapStartTime: null,
+  lapRecords: [],
+  raceStartTime: null,
 
   // Actions
   setPosition: (position) => set({ position }),
@@ -61,5 +87,84 @@ export const useCarStore = create<CarState & CarActions>((set) => ({
   setDetectedObject: (detectedObject) => set({ detectedObject }),
   incrementScore: () => set((state) => ({ score: state.score + 1 })),
   resetScore: () => set({ score: 0 }),
-  setLapTime: (lapTime) => set({ lapTime }),
+
+  // 랩 타임 액션
+  setTotalLaps: (laps) => set({ totalLaps: Math.max(1, laps) }),
+
+  startLap: () => {
+    const now = performance.now();
+    const state = get();
+
+    // 첫 랩 시작이면 경주 시작 시간도 함께 설정
+    if (state.raceStartTime === null) {
+      set({
+        raceStartTime: now,
+        currentLap: 1,
+        lapStartTime: now,
+        lapRecords: [], // 새 경주 시작 시 기존 기록 초기화
+      });
+    } else {
+      set({
+        currentLap: state.currentLap + 1,
+        lapStartTime: now,
+      });
+    }
+  },
+
+  completeLap: () => {
+    const state = get();
+    const now = performance.now();
+
+    if (state.lapStartTime === null || state.currentLap === 0) return;
+
+    const lapTime = now - state.lapStartTime;
+    const newRecord: LapRecord = {
+      lapNumber: state.currentLap,
+      lapTime,
+    };
+
+    set({
+      lapRecords: [...state.lapRecords, newRecord],
+      lapStartTime: null, // 랩이 끝났음을 표시
+    });
+  },
+
+  resetRace: () => {
+    set({
+      currentLap: 0,
+      lapStartTime: null,
+      lapRecords: [],
+      raceStartTime: null,
+      savePointId: 0,
+    });
+  },
+
+  getCurrentLapTime: () => {
+    const state = get();
+
+    // 진행 중인 랩이 있으면 경과 시간 계산
+    if (state.lapStartTime !== null) {
+      return performance.now() - state.lapStartTime;
+    }
+
+    // 진행 중인 랩이 없고, 마지막 랩 기록이 있으면 그 값을 유지
+    if (state.lapRecords.length > 0) {
+      const last = state.lapRecords[state.lapRecords.length - 1];
+      return last.lapTime;
+    }
+
+    return 0;
+  },
+
+  getBestLapTime: () => {
+    const state = get();
+    if (state.lapRecords.length === 0) return null;
+    return Math.min(...state.lapRecords.map((r) => r.lapTime));
+  },
+
+  getTotalTime: () => {
+    const state = get();
+    if (state.raceStartTime === null) return 0;
+    return performance.now() - state.raceStartTime;
+  },
 }));

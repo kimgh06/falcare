@@ -15,16 +15,48 @@ export default function CarPanel() {
     driftGauge,
     detectedDistance,
     detectedObject,
-    lapTime,
     savePointId,
+    // 랩 타임 관련
+    currentLap,
+    totalLaps,
+    lapRecords,
+    getCurrentLapTime,
+    getBestLapTime,
+    getTotalTime,
   } = useCarStore();
 
   const [mounted, setMounted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
     // 클라이언트에서만 실행
     setMounted(true);
-  }, []);
+
+    // 현재 시간을 주기적으로 업데이트 (UI 갱신용)
+    const interval = setInterval(() => {
+      setCurrentTime(getCurrentLapTime());
+    }, 16); // 약 60fps
+
+    return () => clearInterval(interval);
+  }, [getCurrentLapTime]);
+
+  // 시간 포맷팅 함수 (밀리초를 MM:SS.mmm 형식으로)
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const milliseconds = Math.floor((ms % 1000) / 10); // 10ms 단위로 표시
+    if (minutes > 0) {
+      return `${minutes}:${seconds.toString().padStart(2, "0")}.${milliseconds
+        .toString()
+        .padStart(2, "0")}`;
+    }
+    return `${seconds}.${milliseconds.toString().padStart(2, "0")}`;
+  };
+
+  const currentLapTime = getCurrentLapTime();
+  const bestLapTime = getBestLapTime();
+  const totalTime = getTotalTime();
 
   return (
     <div
@@ -74,7 +106,7 @@ export default function CarPanel() {
                 letterSpacing: "0.5px",
               }}
             >
-              Checkpoint
+              Lap
             </div>
             <div
               style={{
@@ -84,78 +116,220 @@ export default function CarPanel() {
                 fontVariantNumeric: "tabular-nums",
               }}
             >
-              #{savePointId}
+              {currentLap > 0
+                ? `${currentLap} / ${totalLaps}`
+                : `0 / ${totalLaps}`}
             </div>
           </div>
           <div
             style={{
               display: "flex",
-              gap: "16px",
+              gap: "12px",
               alignItems: "center",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-                gap: "4px",
-              }}
-            >
+            {/* 현재 랩 타임 */}
+            {currentLap > 0 && (
               <div
                 style={{
-                  fontSize: "9px",
-                  color: "rgba(255, 255, 255, 0.5)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  gap: "4px",
                 }}
               >
-                Time
+                <div
+                  style={{
+                    fontSize: "9px",
+                    color: "rgba(255, 255, 255, 0.5)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Current
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    color: "#34d399",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {formatTime(currentLapTime)}
+                </div>
               </div>
+            )}
+
+            {/* 최고 랩 타임 */}
+            {bestLapTime !== null && (
               <div
                 style={{
-                  fontSize: "14px",
-                  fontWeight: "700",
-                  color: "#34d399",
-                  fontVariantNumeric: "tabular-nums",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  gap: "2px",
                 }}
               >
-                {Math.floor(performance.now() / 1000)}s
+                <div
+                  style={{
+                    fontSize: "9px",
+                    color: "rgba(255, 255, 255, 0.5)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Best
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    color: "#fbbf24",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {formatTime(bestLapTime)}
+                </div>
               </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-                gap: "2px",
-              }}
-            >
+            )}
+
+            {/* 총 시간 */}
+            {currentLap > 0 && (
               <div
                 style={{
-                  fontSize: "9px",
-                  color: "rgba(255, 255, 255, 0.5)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  gap: "2px",
                 }}
               >
-                Lap
+                <div
+                  style={{
+                    fontSize: "9px",
+                    color: "rgba(255, 255, 255, 0.5)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Total
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    color: "#a78bfa",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {formatTime(totalTime)}
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "700",
-                  color:
-                    lapTime > 600000 ? "rgba(255, 255, 255, 0.3)" : "#a78bfa",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {lapTime > 600000 ? "--" : `${Math.floor(lapTime / 1000)}s`}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
+
+      {/* 랩 기록 리스트 */}
+      {lapRecords.length > 0 && (
+        <div
+          style={{
+            marginBottom: "10px",
+            paddingBottom: "10px",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+            maxHeight: "120px",
+            overflowY: "auto",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "9px",
+              color: "rgba(255, 255, 255, 0.5)",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              marginBottom: "6px",
+            }}
+          >
+            Lap Times
+          </div>
+          {lapRecords.map((record) => {
+            const isBest = bestLapTime === record.lapTime;
+            return (
+              <div
+                key={record.lapNumber}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "4px 8px",
+                  background: isBest
+                    ? "rgba(251, 191, 36, 0.15)"
+                    : "rgba(255, 255, 255, 0.03)",
+                  borderRadius: "4px",
+                  marginBottom: "4px",
+                  border: isBest ? "1px solid rgba(251, 191, 36, 0.3)" : "none",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "10px",
+                    color: "rgba(255, 255, 255, 0.7)",
+                    fontWeight: isBest ? "600" : "400",
+                  }}
+                >
+                  Lap {record.lapNumber}
+                </span>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    color: isBest ? "#fbbf24" : "rgba(255, 255, 255, 0.9)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {formatTime(record.lapTime)}
+                  {isBest && " ⭐"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 체크포인트 정보 */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingBottom: "10px",
+          marginBottom: "10px",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <div
+            style={{
+              fontSize: "9px",
+              color: "rgba(255, 255, 255, 0.5)",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Checkpoint
+          </div>
+          <div
+            style={{
+              fontSize: "14px",
+              fontWeight: "700",
+              color: "#60a5fa",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            #{savePointId}
+          </div>
+        </div>
+      </div>
 
       {/* 차량 상태 정보 */}
       <div
