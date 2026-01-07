@@ -6,6 +6,13 @@ export type LapRecord = {
   lapTime: number; // 랩 시간 (ms)
 };
 
+// 리플레이 프레임 타입
+export type ReplayFrame = {
+  time: number; // 리플레이 시작으로부터 경과 시간 (ms)
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number; w: number };
+};
+
 type CarState = {
   // 차량 위치
   position: { x: number; y: number; z: number } | null;
@@ -31,6 +38,12 @@ type CarState = {
   lapStartTime: number | null; // 현재 랩 시작 시간
   lapRecords: LapRecord[]; // 완료된 랩 기록
   raceStartTime: number | null; // 경주 시작 시간
+
+  // 리플레이 시스템
+  replayFrames: ReplayFrame[]; // 녹화된 프레임
+  isRecordingReplay: boolean;
+  isReplaying: boolean;
+  replayStartTime: number | null; // 재생 시작 시각
 };
 
 type CarActions = {
@@ -54,6 +67,15 @@ type CarActions = {
   getCurrentLapTime: () => number;
   getBestLapTime: () => number | null;
   getTotalTime: () => number;
+
+  // 리플레이 관련 액션
+  startReplayRecording: () => void;
+  stopReplayRecording: () => void;
+  clearReplay: () => void;
+  addReplayFrame: (frame: ReplayFrame) => void;
+  loadReplay: (frames: ReplayFrame[]) => void;
+  startReplay: () => void;
+  stopReplay: () => void;
 };
 
 export const useCarStore = create<CarState & CarActions>((set, get) => ({
@@ -74,6 +96,12 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
   lapStartTime: null,
   lapRecords: [],
   raceStartTime: null,
+
+  // 리플레이 초기 상태
+  replayFrames: [],
+  isRecordingReplay: false,
+  isReplaying: false,
+  replayStartTime: null,
 
   // Actions
   setPosition: (position) => set({ position }),
@@ -166,5 +194,56 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
     const state = get();
     if (state.raceStartTime === null) return 0;
     return performance.now() - state.raceStartTime;
+  },
+
+  // 리플레이 액션
+  startReplayRecording: () => {
+    // 새 녹화 시작 시 기존 프레임은 비우지 않는다 (원하면 clearReplay 호출)
+    set({ isRecordingReplay: true });
+  },
+
+  stopReplayRecording: () => {
+    set({ isRecordingReplay: false });
+  },
+
+  clearReplay: () => {
+    set({
+      replayFrames: [],
+      isRecordingReplay: false,
+      isReplaying: false,
+      replayStartTime: null,
+    });
+  },
+
+  addReplayFrame: (frame: ReplayFrame) => {
+    const state = get();
+    // 너무 많은 프레임을 방지하기 위해 상한 설정 (예: 60 FPS * 300초 = 18,000)
+    if (state.replayFrames.length > 20000) return;
+    set({ replayFrames: [...state.replayFrames, frame] });
+  },
+
+  loadReplay: (frames: ReplayFrame[]) => {
+    set({
+      replayFrames: frames,
+      isRecordingReplay: false,
+      isReplaying: false,
+      replayStartTime: null,
+    });
+  },
+
+  startReplay: () => {
+    const state = get();
+    if (state.replayFrames.length === 0) return;
+    set({
+      isReplaying: true,
+      replayStartTime: performance.now(),
+    });
+  },
+
+  stopReplay: () => {
+    set({
+      isReplaying: false,
+      replayStartTime: null,
+    });
   },
 }));

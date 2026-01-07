@@ -21,7 +21,7 @@ import {
   ExtrudeGeometry,
   Mesh,
 } from "three";
-import { useCarStore } from "~/src/shared/store/carStore";
+import { useCarStore, type ReplayFrame } from "~/src/shared/store/carStore";
 
 type CarProps = {
   position?: [number, number, number];
@@ -139,6 +139,9 @@ const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
     setDetectedDistance,
     setDetectedObject,
     incrementScore,
+    // 리플레이 관련
+    isRecordingReplay,
+    addReplayFrame,
   } = useCarStore();
 
   // 잡기 감지 관련 상태
@@ -160,6 +163,9 @@ const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
 
   // 부채꼴 시각화용 ref
   const sectorRef = useRef<Mesh>(null);
+
+  // 리플레이 기록 간격 관리 (ms)
+  const lastReplayRecordTime = useRef(0);
 
   // 카트바디 초기화: 위치와 속도 명시적 설정 (Joint 생성 타이밍 문제 해결)
   const initFrameCount = useRef(0);
@@ -876,23 +882,23 @@ const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
     // 디버깅용 (주석 처리 가능)
     if (bodyCount > 0 && Math.random() < 0.01) {
       // 1% 확률로 로그 출력 (성능 고려)
-      console.log("감지 디버그:", {
-        전체오브젝트: bodyCount,
-        동적오브젝트: dynamicBodyCount,
-        범위내: inRangeCount,
-        각도내: inAngleCount,
-        감지됨: closestObject !== null,
-        forward: {
-          x: forward.x.toFixed(2),
-          y: forward.y.toFixed(2),
-          z: forward.z.toFixed(2),
-        },
-        차량위치: {
-          x: currentPos.x.toFixed(2),
-          y: currentPos.y.toFixed(2),
-          z: currentPos.z.toFixed(2),
-        },
-      });
+      // console.log("감지 디버그:", {
+      //   전체오브젝트: bodyCount,
+      //   동적오브젝트: dynamicBodyCount,
+      //   범위내: inRangeCount,
+      //   각도내: inAngleCount,
+      //   감지됨: closestObject !== null,
+      //   forward: {
+      //     x: forward.x.toFixed(2),
+      //     y: forward.y.toFixed(2),
+      //     z: forward.z.toFixed(2),
+      //   },
+      //   차량위치: {
+      //     x: currentPos.x.toFixed(2),
+      //     y: currentPos.y.toFixed(2),
+      //     z: currentPos.z.toFixed(2),
+      //   },
+      // });
     }
 
     // 감지된 오브젝트 업데이트
@@ -944,6 +950,32 @@ const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
     handleUpsideDownRecovery(currentQuat, delta);
     limitAngularVelocity();
     updateDisplayPanel(delta);
+
+    // 리플레이 프레임 기록
+    if (isRecordingReplay && cartbodyRef.current) {
+      const now = performance.now();
+      const stateNow = useCarStore.getState();
+      const baseTime = stateNow.raceStartTime ?? now;
+      const elapsed = now - baseTime;
+
+      // 60fps 기준으로 약 16ms 간격으로 기록
+      if (now - lastReplayRecordTime.current >= 16) {
+        const pos = cartbodyRef.current.translation();
+        const rot = cartbodyRef.current.rotation();
+        const frame: ReplayFrame = {
+          time: elapsed,
+          position: { x: pos.x, y: pos.y, z: pos.z },
+          rotation: {
+            x: rot.x,
+            y: rot.y,
+            z: rot.z,
+            w: rot.w,
+          },
+        };
+        addReplayFrame(frame);
+        lastReplayRecordTime.current = now;
+      }
+    }
 
     // 오브젝트 감지
     detectGrabableObject(forward, currentPos, currentRot.y);

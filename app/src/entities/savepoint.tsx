@@ -76,16 +76,21 @@ export default function SavePoint({
 
         // Finish 라인 (id === maxId) 통과 시
         if (id === maxId) {
-          // 이전 체크포인트를 모두 통과했고, 랩이 시작된 경우에만 랩 완료
-          if (id - 1 === savePointId && currentLap > 0) {
+          // 이전 체크포인트를 모두 순서대로 통과했고, 랩이 시작된 경우에만 "유효한" 랩으로 인정
+          const isValidFinish = id - 1 === savePointId && currentLap > 0;
+
+          if (isValidFinish) {
             completeLap();
 
             // 경주 완료 체크
             if (currentLap >= totalLaps) {
               console.log(`경주 완료! 총 ${totalLaps}바퀴 완주했습니다.`);
             }
+
+            // 유효한 랩일 때만 마지막 체크포인트를 Finish로 기록
+            // → 다음 Start에서 savePointId === maxId 인 경우에만 새 랩 시작
+            setSavePointId(id);
           }
-          setSavePointId(id);
           return;
         }
 

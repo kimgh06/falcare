@@ -23,6 +23,16 @@ export default function CarPanel() {
     getCurrentLapTime,
     getBestLapTime,
     getTotalTime,
+    // 리플레이
+    replayFrames,
+    isRecordingReplay,
+    isReplaying,
+    startReplayRecording,
+    stopReplayRecording,
+    clearReplay,
+    loadReplay,
+    startReplay,
+    stopReplay,
   } = useCarStore();
 
   const [mounted, setMounted] = useState(false);
@@ -57,6 +67,10 @@ export default function CarPanel() {
   const currentLapTime = getCurrentLapTime();
   const bestLapTime = getBestLapTime();
   const totalTime = getTotalTime();
+  const completedLaps = lapRecords.length;
+  // 화면에 표시할 랩: 최소 1부터 시작, 진행 중이면 currentLap 기준
+  const displayLap =
+    currentLap > 0 ? currentLap : completedLaps > 0 ? completedLaps : 1;
 
   return (
     <div
@@ -116,9 +130,7 @@ export default function CarPanel() {
                 fontVariantNumeric: "tabular-nums",
               }}
             >
-              {currentLap > 0
-                ? `${currentLap} / ${totalLaps}`
-                : `0 / ${totalLaps}`}
+              {`${displayLap} / ${totalLaps}`}
             </div>
           </div>
           <div
@@ -589,6 +601,166 @@ export default function CarPanel() {
                   : "0 0 4px rgba(52, 211, 153, 0.2)",
             }}
           />
+        </div>
+      </div>
+
+      {/* 리플레이 컨트롤 */}
+      <div
+        style={{
+          marginTop: "10px",
+          paddingTop: "10px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          pointerEvents: "auto",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <span
+            style={{
+              color: "rgba(255, 255, 255, 0.6)",
+              fontSize: "10px",
+              fontWeight: "500",
+            }}
+          >
+            Replay
+          </span>
+          <div
+            style={{
+              display: "flex",
+              gap: "6px",
+            }}
+          >
+            <button
+              onClick={() => {
+                if (isRecordingReplay) {
+                  stopReplayRecording();
+                } else {
+                  clearReplay();
+                  startReplayRecording();
+                }
+              }}
+              style={{
+                padding: "4px 8px",
+                fontSize: "10px",
+                borderRadius: "6px",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                background: isRecordingReplay
+                  ? "rgba(248, 113, 113, 0.4)"
+                  : "rgba(15, 23, 42, 0.8)",
+                color: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              {isRecordingReplay ? "Stop Rec" : "Rec"}
+            </button>
+            <button
+              onClick={() => {
+                if (isReplaying) {
+                  stopReplay();
+                } else {
+                  startReplay();
+                }
+              }}
+              disabled={replayFrames.length === 0}
+              style={{
+                padding: "4px 8px",
+                fontSize: "10px",
+                borderRadius: "6px",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                background: isReplaying
+                  ? "rgba(96, 165, 250, 0.5)"
+                  : "rgba(15, 23, 42, 0.8)",
+                color:
+                  replayFrames.length === 0 ? "rgba(255,255,255,0.3)" : "#fff",
+                cursor: replayFrames.length === 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              {isReplaying ? "Stop" : "Play"}
+            </button>
+            <button
+              onClick={() => {
+                // JSON 다운로드
+                const data = JSON.stringify(replayFrames);
+                const blob = new Blob([data], {
+                  type: "application/json",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "replay.json";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              disabled={replayFrames.length === 0}
+              style={{
+                padding: "4px 8px",
+                fontSize: "10px",
+                borderRadius: "6px",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                background: "rgba(15, 23, 42, 0.8)",
+                color:
+                  replayFrames.length === 0 ? "rgba(255,255,255,0.3)" : "#fff",
+                cursor: replayFrames.length === 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              Export
+            </button>
+            <label
+              style={{
+                padding: "4px 8px",
+                fontSize: "10px",
+                borderRadius: "6px",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                background: "rgba(15, 23, 42, 0.8)",
+                color: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              Import
+              <input
+                type="file"
+                accept="application/json"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    try {
+                      const parsed = JSON.parse(
+                        reader.result as string
+                      ) as unknown;
+                      if (Array.isArray(parsed)) {
+                        loadReplay(parsed as any);
+                      }
+                    } catch (err) {
+                      console.error("Failed to load replay", err);
+                    }
+                  };
+                  reader.readAsText(file);
+                  // 같은 파일 다시 선택 가능하도록 초기화
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
+        </div>
+        <div
+          style={{
+            fontSize: "9px",
+            color: "rgba(255,255,255,0.4)",
+          }}
+        >
+          Frames: {replayFrames.length}
         </div>
       </div>
     </div>

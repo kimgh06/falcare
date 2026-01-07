@@ -17,6 +17,7 @@ import SavePoint from "~/src/entities/savepoint";
 import { useCarStore } from "~/src/shared/store/carStore";
 import MapFloor from "~/src/entities/floor";
 import Map from "~/src/entities/map";
+import GhostCar from "~/src/entities/ghost-car";
 
 // ===============================
 // 카메라 설정 상수
@@ -231,6 +232,8 @@ function Scene() {
         }
         keyQueue={keyQueue}
       />
+      {/* 리플레이 고스트 차량 */}
+      <GhostCar />
       {SAVE_POINT_POSITIONS.map((position, index) => (
         <SavePoint
           key={index}
