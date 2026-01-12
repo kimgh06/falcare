@@ -52,8 +52,8 @@ const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
   const CAR_TUNING = {
     // 전진/후진 가속
     FORWARD: {
-      BASE_ACCEL: 2.5, // 기본 가속도 (클수록 초반 가속이 강해짐)
-      MAX_SPEED_FOR_ACCEL: 10.0, // 이 속도 근처에서 가속도 감소
+      BASE_ACCEL: 3, // 기본 가속도 (클수록 초반 가속이 강해짐)
+      MAX_SPEED_FOR_ACCEL: 15.0, // 이 속도 근처에서 가속도 감소
       MAX_ACCEL_FACTOR_AT_MAX_SPEED: 0.7, // 최고 속도에서의 가속도 비율 (1에 가까울수록 고속에서 더 잘 붙음)
     },
 
