@@ -23,6 +23,7 @@ export default function CarPanel() {
     getCurrentLapTime,
     getBestLapTime,
     getTotalTime,
+    isRaceComplete,
     // 리플레이
     replayFrames,
     isRecordingReplay,
@@ -72,8 +73,282 @@ export default function CarPanel() {
   const displayLap =
     currentLap > 0 ? currentLap : completedLaps > 0 ? completedLaps : 1;
 
+  // 리플레이 다운로드 함수
+  const handleDownloadReplay = () => {
+    if (replayFrames.length === 0) {
+      alert("다운로드할 리플레이가 없습니다.");
+      return;
+    }
+    const data = JSON.stringify(replayFrames);
+    const blob = new Blob([data], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `replay_${new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
+      {/* 경주 완료 시 리플레이 다운로드 버튼 */}
+      {isRaceComplete && replayFrames.length > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 2000,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "20px",
+            pointerEvents: "auto",
+          }}
+        >
+          <div
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              padding: "40px 50px",
+              minWidth: "400px",
+              maxWidth: "500px",
+              borderRadius: "20px",
+              border: "2px solid rgba(96, 165, 250, 0.3)",
+              boxShadow:
+                "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) inset",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "28px",
+                fontWeight: "700",
+                color: "#60a5fa",
+                marginBottom: "24px",
+                fontFamily:
+                  '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+              }}
+            >
+              경주 완료!
+            </div>
+
+            {/* 기록 표시 */}
+            <div
+              style={{
+                marginBottom: "24px",
+                padding: "20px",
+                background: "rgba(255, 255, 255, 0.05)",
+                borderRadius: "12px",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+              }}
+            >
+              {/* 총 시간 */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "14px",
+                    color: "rgba(255, 255, 255, 0.7)",
+                    fontFamily:
+                      '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+                  }}
+                >
+                  총 시간
+                </span>
+                <span
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: "#a78bfa",
+                    fontVariantNumeric: "tabular-nums",
+                    fontFamily:
+                      '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", "Source Code Pro", monospace',
+                  }}
+                >
+                  {formatTime(totalTime)}
+                </span>
+              </div>
+
+              {/* 최고 랩 타임 */}
+              {bestLapTime !== null && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      color: "rgba(255, 255, 255, 0.7)",
+                      fontFamily:
+                        '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+                    }}
+                  >
+                    최고 랩 타임
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "700",
+                      color: "#fbbf24",
+                      fontVariantNumeric: "tabular-nums",
+                      fontFamily:
+                        '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", "Source Code Pro", monospace',
+                    }}
+                  >
+                    {formatTime(bestLapTime)}
+                  </span>
+                </div>
+              )}
+
+              {/* 랩 기록 리스트 */}
+              {lapRecords.length > 0 && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    paddingTop: "16px",
+                    borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                    maxHeight: "200px",
+                    overflowY: "auto",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "rgba(255, 255, 255, 0.5)",
+                      marginBottom: "8px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      fontFamily:
+                        '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+                    }}
+                  >
+                    랩 기록
+                  </div>
+                  {lapRecords.map((record) => {
+                    const isBest = bestLapTime === record.lapTime;
+                    return (
+                      <div
+                        key={record.lapNumber}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "6px 12px",
+                          background: isBest
+                            ? "rgba(251, 191, 36, 0.15)"
+                            : "rgba(255, 255, 255, 0.03)",
+                          borderRadius: "6px",
+                          marginBottom: "6px",
+                          border: isBest
+                            ? "1px solid rgba(251, 191, 36, 0.3)"
+                            : "none",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: "rgba(255, 255, 255, 0.7)",
+                            fontWeight: isBest ? "600" : "400",
+                            fontFamily:
+                              '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+                          }}
+                        >
+                          Lap {record.lapNumber}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            color: isBest
+                              ? "#fbbf24"
+                              : "rgba(255, 255, 255, 0.9)",
+                            fontVariantNumeric: "tabular-nums",
+                            fontFamily:
+                              '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", "Source Code Pro", monospace',
+                          }}
+                        >
+                          {formatTime(record.lapTime)}
+                          {isBest && " ⭐"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                fontSize: "14px",
+                color: "rgba(255, 255, 255, 0.7)",
+                marginBottom: "24px",
+                fontFamily:
+                  '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+              }}
+            >
+              리플레이를 다운로드하시겠습니까?
+            </div>
+            <button
+              onClick={handleDownloadReplay}
+              style={{
+                padding: "16px 32px",
+                fontSize: "16px",
+                fontWeight: "600",
+                color: "#ffffff",
+                background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
+                border: "none",
+                borderRadius: "12px",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+                boxShadow: "0 4px 16px rgba(96, 165, 250, 0.4)",
+                fontFamily:
+                  '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.05)";
+                e.currentTarget.style.boxShadow =
+                  "0 6px 20px rgba(96, 165, 250, 0.6)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.boxShadow =
+                  "0 4px 16px rgba(96, 165, 250, 0.4)";
+              }}
+            >
+              리플레이 다운로드
+            </button>
+            <div
+              style={{
+                fontSize: "12px",
+                color: "rgba(255, 255, 255, 0.5)",
+                marginTop: "12px",
+                fontFamily:
+                  '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+              }}
+            >
+              {replayFrames.length} 프레임
+            </div>
+          </div>
+        </div>
+      )}
       {/* 상단 좌우 패널 */}
       <div
         style={{

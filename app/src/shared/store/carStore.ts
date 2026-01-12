@@ -11,6 +11,7 @@ export type ReplayFrame = {
   time: number; // 리플레이 시작으로부터 경과 시간 (ms)
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number; w: number };
+  velocity: { x: number; y: number; z: number }; // 차량의 선형 속도
   driftGauge: number; // 드리프트 게이지 (0-100)
   score: number; // 드리프트 점수
 };

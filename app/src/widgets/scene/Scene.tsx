@@ -111,11 +111,23 @@ function Scene() {
     };
   }, []);
 
-  const handleKeyDown = (event: KeyboardEvent) =>
-    (keyQueue.current[event.code] = true);
+  const handleKeyDown = (event: KeyboardEvent) => {
+    const carState = useCarStore.getState();
+    // 경주가 완료되면 키 입력 차단 (ESC 키는 예외)
+    if (carState.isRaceComplete && event.code !== "Escape") {
+      return;
+    }
+    keyQueue.current[event.code] = true;
+  };
 
-  const handleKeyUp = (event: KeyboardEvent) =>
+  const handleKeyUp = (event: KeyboardEvent) => {
+    const carState = useCarStore.getState();
+    // 경주가 완료되면 키 입력 차단 (ESC 키는 예외)
+    if (carState.isRaceComplete && event.code !== "Escape") {
+      return;
+    }
     delete keyQueue.current[event.code];
+  };
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
@@ -127,10 +139,20 @@ function Scene() {
   }, []);
 
   useFrame((state, delta) => {
+    const carState = useCarStore.getState();
+
+    // 경주가 완료되면 모든 키 입력을 keyQueue에서 제거 (ESC 제외)
+    if (carState.isRaceComplete) {
+      Object.keys(keyQueue.current).forEach((key) => {
+        if (key !== "Escape") {
+          delete keyQueue.current[key];
+        }
+      });
+    }
+
     // ESC 키를 누르면 종료
     if (keyQueue.current["Escape"]) {
       // 경주 완료 상태가 아니면 경주 완료 처리
-      const carState = useCarStore.getState();
       if (!carState.isRaceComplete && carState.raceStartTime !== null) {
         // 강제로 경주 완료 처리
         const now = performance.now();

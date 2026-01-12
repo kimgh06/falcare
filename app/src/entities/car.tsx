@@ -964,6 +964,7 @@ const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
       if (now - lastReplayRecordTime.current >= 16) {
         const pos = cartbodyRef.current.translation();
         const rot = cartbodyRef.current.rotation();
+        const vel = cartbodyRef.current.linvel(); // 선형 속도 가져오기
         const frame: ReplayFrame = {
           time: elapsed,
           position: { x: pos.x, y: pos.y, z: pos.z },
@@ -973,6 +974,7 @@ const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
             z: rot.z,
             w: rot.w,
           },
+          velocity: { x: vel.x, y: vel.y, z: vel.z }, // 속도 기록
           driftGauge: driftGaugeValue.current, // 현재 드리프트 게이지 값
           score: score, // 현재 드리프트 점수
         };
