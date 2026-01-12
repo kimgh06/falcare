@@ -127,6 +127,23 @@ function Scene() {
   }, []);
 
   useFrame((state, delta) => {
+    // ESC 키를 누르면 종료
+    if (keyQueue.current["Escape"]) {
+      // 경주 완료 상태가 아니면 경주 완료 처리
+      const carState = useCarStore.getState();
+      if (!carState.isRaceComplete && carState.raceStartTime !== null) {
+        // 강제로 경주 완료 처리
+        const now = performance.now();
+        useCarStore.setState({
+          isRaceComplete: true,
+          raceEndTime: now,
+          isRecordingReplay: false,
+        });
+      }
+      // ESC 키는 한 번만 처리되도록 제거
+      delete keyQueue.current["Escape"];
+    }
+
     // R 키를 누르면 차량 위치/회전/속도를 초기화
     if (keyQueue.current["KeyR"]) {
       const rigidBody = carRef.current?.rigidBodyRef.current;

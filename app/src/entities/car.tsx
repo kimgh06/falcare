@@ -142,6 +142,8 @@ const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
     // 리플레이 관련
     isRecordingReplay,
     addReplayFrame,
+    score,
+    driftGauge,
   } = useCarStore();
 
   // 잡기 감지 관련 상태
@@ -971,6 +973,8 @@ const CarInner: ForwardRefRenderFunction<CarHandle, CarProps> = (
             z: rot.z,
             w: rot.w,
           },
+          driftGauge: driftGaugeValue.current, // 현재 드리프트 게이지 값
+          score: score, // 현재 드리프트 점수
         };
         addReplayFrame(frame);
         lastReplayRecordTime.current = now;

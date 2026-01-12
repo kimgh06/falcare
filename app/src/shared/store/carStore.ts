@@ -11,6 +11,8 @@ export type ReplayFrame = {
   time: number; // 리플레이 시작으로부터 경과 시간 (ms)
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number; w: number };
+  driftGauge: number; // 드리프트 게이지 (0-100)
+  score: number; // 드리프트 점수
 };
 
 type CarState = {
@@ -38,6 +40,8 @@ type CarState = {
   lapStartTime: number | null; // 현재 랩 시작 시간
   lapRecords: LapRecord[]; // 완료된 랩 기록
   raceStartTime: number | null; // 경주 시작 시간
+  raceEndTime: number | null; // 경주 종료 시간 (경주 완료 시 설정)
+  isRaceComplete: boolean; // 경주 완료 여부
 
   // 리플레이 시스템
   replayFrames: ReplayFrame[]; // 녹화된 프레임
@@ -91,11 +95,13 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
   detectedObject: false,
 
   // 랩 타임 초기 상태
-  totalLaps: 3,
+  totalLaps: 2, // 디버깅용: 2바퀴
   currentLap: 0,
   lapStartTime: null,
   lapRecords: [],
   raceStartTime: null,
+  raceEndTime: null,
+  isRaceComplete: false,
 
   // 리플레이 초기 상태
   replayFrames: [],
@@ -123,13 +129,21 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
     const now = performance.now();
     const state = get();
 
-    // 첫 랩 시작이면 경주 시작 시간도 함께 설정
+    // 경주가 완료된 상태면 새 랩 시작 불가
+    if (state.isRaceComplete) return;
+
+    // 첫 랩 시작이면 경주 시작 시간도 함께 설정하고 자동 녹화 시작
     if (state.raceStartTime === null) {
       set({
         raceStartTime: now,
         currentLap: 1,
         lapStartTime: now,
         lapRecords: [], // 새 경주 시작 시 기존 기록 초기화
+        raceEndTime: null,
+        isRaceComplete: false,
+        // 자동 녹화 시작
+        isRecordingReplay: true,
+        replayFrames: [], // 새 경주 시작 시 기존 리플레이 초기화
       });
     } else {
       set({
@@ -151,9 +165,17 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
       lapTime,
     };
 
+    const updatedRecords = [...state.lapRecords, newRecord];
+    const isComplete = updatedRecords.length >= state.totalLaps;
+
     set({
-      lapRecords: [...state.lapRecords, newRecord],
+      lapRecords: updatedRecords,
       lapStartTime: null, // 랩이 끝났음을 표시
+      // 모든 랩 완료 시 경주 종료 처리
+      isRaceComplete: isComplete,
+      raceEndTime: isComplete ? now : null,
+      // 경주 완료 시 녹화 자동 중지
+      isRecordingReplay: isComplete ? false : state.isRecordingReplay,
     });
   },
 
@@ -163,12 +185,29 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
       lapStartTime: null,
       lapRecords: [],
       raceStartTime: null,
+      raceEndTime: null,
+      isRaceComplete: false,
       savePointId: 0,
+      // 리플레이도 초기화
+      replayFrames: [],
+      isRecordingReplay: false,
+      isReplaying: false,
+      replayStartTime: null,
     });
   },
 
   getCurrentLapTime: () => {
     const state = get();
+
+    // 경주가 완료되었으면 시간 정지
+    if (state.isRaceComplete && state.raceEndTime !== null) {
+      // 마지막 랩 기록 반환
+      if (state.lapRecords.length > 0) {
+        const last = state.lapRecords[state.lapRecords.length - 1];
+        return last.lapTime;
+      }
+      return 0;
+    }
 
     // 진행 중인 랩이 있으면 경과 시간 계산
     if (state.lapStartTime !== null) {
@@ -193,6 +232,12 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
   getTotalTime: () => {
     const state = get();
     if (state.raceStartTime === null) return 0;
+    
+    // 경주가 완료되었으면 종료 시각 기준으로 시간 정지
+    if (state.isRaceComplete && state.raceEndTime !== null) {
+      return state.raceEndTime - state.raceStartTime;
+    }
+    
     return performance.now() - state.raceStartTime;
   },
 
