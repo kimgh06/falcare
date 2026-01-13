@@ -49,6 +49,9 @@ type CarState = {
   isRecordingReplay: boolean;
   isReplaying: boolean;
   replayStartTime: number | null; // 재생 시작 시각
+  isReplayPaused: boolean; // 일시정지 상태
+  replaySpeed: number; // 재생 속도 (0.5, 1.0, 2.0 등)
+  replayPausedTime: number | null; // 일시정지된 시점의 경과 시간
 };
 
 type CarActions = {
@@ -81,6 +84,12 @@ type CarActions = {
   loadReplay: (frames: ReplayFrame[]) => void;
   startReplay: () => void;
   stopReplay: () => void;
+  pauseReplay: () => void;
+  resumeReplay: () => void;
+  setReplaySpeed: (speed: number) => void;
+  seekReplay: (time: number) => void; // 특정 시점으로 이동 (ms)
+  getReplayCurrentTime: () => number; // 현재 재생 시간 반환 (ms)
+  getReplayTotalTime: () => number; // 총 리플레이 시간 반환 (ms)
 };
 
 export const useCarStore = create<CarState & CarActions>((set, get) => ({
@@ -109,6 +118,9 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
   isRecordingReplay: false,
   isReplaying: false,
   replayStartTime: null,
+  isReplayPaused: false,
+  replaySpeed: 1.0,
+  replayPausedTime: null,
 
   // Actions
   setPosition: (position) => set({ position }),
@@ -258,6 +270,8 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
       isRecordingReplay: false,
       isReplaying: false,
       replayStartTime: null,
+      isReplayPaused: false,
+      replayPausedTime: null,
     });
   },
 
@@ -274,22 +288,118 @@ export const useCarStore = create<CarState & CarActions>((set, get) => ({
       isRecordingReplay: false,
       isReplaying: false,
       replayStartTime: null,
+      isReplayPaused: false,
+      replayPausedTime: null,
     });
   },
 
   startReplay: () => {
     const state = get();
     if (state.replayFrames.length === 0) return;
+    const pausedTime = state.replayPausedTime ?? 0;
     set({
       isReplaying: true,
-      replayStartTime: performance.now(),
+      isReplayPaused: false,
+      replayStartTime: performance.now() - pausedTime / state.replaySpeed,
+      replayPausedTime: null,
     });
   },
 
   stopReplay: () => {
     set({
       isReplaying: false,
+      isReplayPaused: false,
       replayStartTime: null,
+      replayPausedTime: null,
     });
+  },
+
+  pauseReplay: () => {
+    const state = get();
+    if (!state.isReplaying || state.isReplayPaused) return;
+    
+    // 현재 재생 시간 계산
+    const now = performance.now();
+    const elapsed = (now - (state.replayStartTime ?? now)) * state.replaySpeed;
+    const lastFrame = state.replayFrames[state.replayFrames.length - 1];
+    const currentTime = Math.min(elapsed, lastFrame?.time ?? 0);
+    
+    set({
+      isReplayPaused: true,
+      replayPausedTime: currentTime,
+    });
+  },
+
+  resumeReplay: () => {
+    const state = get();
+    if (!state.isReplaying || !state.isReplayPaused) return;
+    
+    const pausedTime = state.replayPausedTime ?? 0;
+    set({
+      isReplayPaused: false,
+      replayStartTime: performance.now() - pausedTime / state.replaySpeed,
+      replayPausedTime: null,
+    });
+  },
+
+  setReplaySpeed: (speed: number) => {
+    const state = get();
+    if (!state.isReplaying) {
+      set({ replaySpeed: speed });
+      return;
+    }
+    
+    // 재생 중이면 현재 시간을 보존하면서 속도 변경
+    const now = performance.now();
+    const currentTime = state.isReplayPaused
+      ? (state.replayPausedTime ?? 0)
+      : (now - (state.replayStartTime ?? now)) * state.replaySpeed;
+    
+    set({
+      replaySpeed: speed,
+      replayStartTime: state.isReplayPaused ? state.replayStartTime : now - currentTime / speed,
+    });
+  },
+
+  seekReplay: (time: number) => {
+    const state = get();
+    if (state.replayFrames.length === 0) return;
+    
+    const lastFrame = state.replayFrames[state.replayFrames.length - 1];
+    const clampedTime = Math.max(0, Math.min(time, lastFrame.time));
+    
+    if (state.isReplaying) {
+      set({
+        replayStartTime: performance.now() - clampedTime / state.replaySpeed,
+        replayPausedTime: state.isReplayPaused ? clampedTime : null,
+      });
+    } else {
+      set({
+        replayPausedTime: clampedTime,
+      });
+    }
+  },
+
+  getReplayCurrentTime: () => {
+    const state = get();
+    if (state.replayFrames.length === 0) return 0;
+    
+    if (state.isReplayPaused) {
+      return state.replayPausedTime ?? 0;
+    }
+    
+    if (!state.isReplaying || !state.replayStartTime) return 0;
+    
+    const now = performance.now();
+    const elapsed = (now - state.replayStartTime) * state.replaySpeed;
+    const lastFrame = state.replayFrames[state.replayFrames.length - 1];
+    return Math.min(elapsed, lastFrame.time);
+  },
+
+  getReplayTotalTime: () => {
+    const state = get();
+    if (state.replayFrames.length === 0) return 0;
+    const lastFrame = state.replayFrames[state.replayFrames.length - 1];
+    return lastFrame.time;
   },
 }));

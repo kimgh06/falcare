@@ -50,33 +50,69 @@ export default function Index() {
           최고의 랩 타임을 기록하세요!
         </p>
 
-        <Link
-          to="/play"
+        <div
           style={{
-            display: "inline-block",
-            padding: "16px 32px",
-            fontSize: "18px",
-            fontWeight: "600",
-            color: "#ffffff",
-            background:
-              "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
-            borderRadius: "12px",
-            textDecoration: "none",
-            transition: "transform 0.2s ease, box-shadow 0.2s ease",
-            boxShadow: "0 4px 16px rgba(96, 165, 250, 0.3)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.05)";
-            e.currentTarget.style.boxShadow =
-              "0 6px 20px rgba(96, 165, 250, 0.4)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "0 4px 16px rgba(96, 165, 250, 0.3)";
+            display: "flex",
+            gap: "16px",
+            justifyContent: "center",
+            flexWrap: "wrap",
           }}
         >
-          게임 시작
-        </Link>
+          <Link
+            to="/play"
+            style={{
+              display: "inline-block",
+              padding: "16px 32px",
+              fontSize: "18px",
+              fontWeight: "600",
+              color: "#ffffff",
+              background:
+                "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
+              borderRadius: "12px",
+              textDecoration: "none",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              boxShadow: "0 4px 16px rgba(96, 165, 250, 0.3)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "scale(1.05)";
+              e.currentTarget.style.boxShadow =
+                "0 6px 20px rgba(96, 165, 250, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow = "0 4px 16px rgba(96, 165, 250, 0.3)";
+            }}
+          >
+            게임 시작
+          </Link>
+          <Link
+            to="/replay"
+            style={{
+              display: "inline-block",
+              padding: "16px 32px",
+              fontSize: "18px",
+              fontWeight: "600",
+              color: "#ffffff",
+              background:
+                "linear-gradient(135deg, #a78bfa 0%, #ec4899 100%)",
+              borderRadius: "12px",
+              textDecoration: "none",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              boxShadow: "0 4px 16px rgba(167, 139, 250, 0.3)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "scale(1.05)";
+              e.currentTarget.style.boxShadow =
+                "0 6px 20px rgba(167, 139, 250, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow = "0 4px 16px rgba(167, 139, 250, 0.3)";
+            }}
+          >
+            리플레이 뷰어
+          </Link>
+        </div>
 
         <div
           style={{
