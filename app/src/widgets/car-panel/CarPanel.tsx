@@ -34,6 +34,8 @@ export default function CarPanel() {
     loadReplay,
     startReplay,
     stopReplay,
+    // 경주 리셋
+    resetRace,
   } = useCarStore();
 
   const [mounted, setMounted] = useState(false);
@@ -306,35 +308,81 @@ export default function CarPanel() {
             >
               리플레이를 다운로드하시겠습니까?
             </div>
-            <button
-              onClick={handleDownloadReplay}
+            <div
               style={{
-                padding: "16px 32px",
-                fontSize: "16px",
-                fontWeight: "600",
-                color: "#ffffff",
-                background: "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
-                border: "none",
-                borderRadius: "12px",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                boxShadow: "0 4px 16px rgba(96, 165, 250, 0.4)",
-                fontFamily:
-                  '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.05)";
-                e.currentTarget.style.boxShadow =
-                  "0 6px 20px rgba(96, 165, 250, 0.6)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 16px rgba(96, 165, 250, 0.4)";
+                display: "flex",
+                gap: "12px",
+                justifyContent: "center",
+                flexWrap: "wrap",
               }}
             >
-              리플레이 다운로드
-            </button>
+              <button
+                onClick={handleDownloadReplay}
+                style={{
+                  padding: "16px 32px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#ffffff",
+                  background:
+                    "linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)",
+                  border: "none",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 4px 16px rgba(96, 165, 250, 0.4)",
+                  fontFamily:
+                    '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 20px rgba(96, 165, 250, 0.6)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 16px rgba(96, 165, 250, 0.4)";
+                }}
+              >
+                리플레이 다운로드
+              </button>
+              <button
+                onClick={() => {
+                  resetRace();
+                  // 차량 위치 초기화를 위한 함수 호출
+                  if ((window as any).resetCarPosition) {
+                    (window as any).resetCarPosition();
+                  }
+                }}
+                style={{
+                  padding: "16px 32px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#ffffff",
+                  background:
+                    "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+                  border: "none",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 4px 16px rgba(52, 211, 153, 0.4)",
+                  fontFamily:
+                    '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 20px rgba(52, 211, 153, 0.6)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 16px rgba(52, 211, 153, 0.4)";
+                }}
+              >
+                다시하기
+              </button>
+            </div>
             <div
               style={{
                 fontSize: "12px",
@@ -664,164 +712,28 @@ export default function CarPanel() {
             </div>
           </div>
 
-          {/* 리플레이 컨트롤 */}
-          <div
-            style={{
-              marginTop: "12px",
-              paddingTop: "12px",
-              borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-              pointerEvents: "auto",
-            }}
-          >
+          {/* 촬영중 표시 */}
+          {isRecordingReplay && (
             <div
               style={{
-                fontSize: "9px",
-                color: "rgba(255, 255, 255, 0.5)",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                marginBottom: "6px",
+                marginTop: "12px",
+                paddingTop: "12px",
+                borderTop: "1px solid rgba(255, 255, 255, 0.1)",
               }}
             >
-              Replay
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "#f87171",
+                  fontWeight: "600",
+                  fontFamily:
+                    '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕", sans-serif',
+                }}
+              >
+                촬영중
+              </div>
             </div>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "4px",
-              }}
-            >
-              <button
-                onClick={() => {
-                  if (isRecordingReplay) {
-                    stopReplayRecording();
-                  } else {
-                    clearReplay();
-                    startReplayRecording();
-                  }
-                }}
-                style={{
-                  padding: "4px 8px",
-                  fontSize: "9px",
-                  borderRadius: "6px",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  background: isRecordingReplay
-                    ? "rgba(248, 113, 113, 0.4)"
-                    : "rgba(15, 23, 42, 0.8)",
-                  color: "#fff",
-                  cursor: "pointer",
-                }}
-              >
-                {isRecordingReplay ? "Stop Rec" : "Rec"}
-              </button>
-              <button
-                onClick={() => {
-                  if (isReplaying) {
-                    stopReplay();
-                  } else {
-                    startReplay();
-                  }
-                }}
-                disabled={replayFrames.length === 0}
-                style={{
-                  padding: "4px 8px",
-                  fontSize: "9px",
-                  borderRadius: "6px",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  background: isReplaying
-                    ? "rgba(96, 165, 250, 0.5)"
-                    : "rgba(15, 23, 42, 0.8)",
-                  color:
-                    replayFrames.length === 0
-                      ? "rgba(255,255,255,0.3)"
-                      : "#fff",
-                  cursor: replayFrames.length === 0 ? "not-allowed" : "pointer",
-                }}
-              >
-                {isReplaying ? "Stop" : "Play"}
-              </button>
-              <button
-                onClick={() => {
-                  // JSON 다운로드
-                  const data = JSON.stringify(replayFrames);
-                  const blob = new Blob([data], {
-                    type: "application/json",
-                  });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "replay.json";
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-                disabled={replayFrames.length === 0}
-                style={{
-                  padding: "4px 8px",
-                  fontSize: "9px",
-                  borderRadius: "6px",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  background: "rgba(15, 23, 42, 0.8)",
-                  color:
-                    replayFrames.length === 0
-                      ? "rgba(255,255,255,0.3)"
-                      : "#fff",
-                  cursor: replayFrames.length === 0 ? "not-allowed" : "pointer",
-                }}
-              >
-                Export
-              </button>
-              <label
-                style={{
-                  padding: "4px 8px",
-                  fontSize: "9px",
-                  borderRadius: "6px",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  background: "rgba(15, 23, 42, 0.8)",
-                  color: "#fff",
-                  cursor: "pointer",
-                }}
-              >
-                Import
-                <input
-                  type="file"
-                  accept="application/json"
-                  style={{ display: "none" }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      try {
-                        const parsed = JSON.parse(
-                          reader.result as string
-                        ) as unknown;
-                        if (Array.isArray(parsed)) {
-                          loadReplay(parsed as any);
-                        }
-                      } catch (err) {
-                        console.error("Failed to load replay", err);
-                      }
-                    };
-                    reader.readAsText(file);
-                    // 같은 파일 다시 선택 가능하도록 초기화
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            </div>
-            <div
-              style={{
-                fontSize: "8px",
-                color: "rgba(255,255,255,0.4)",
-                marginTop: "4px",
-              }}
-            >
-              Frames: {replayFrames.length}
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -950,8 +862,6 @@ export default function CarPanel() {
                     : driftGauge > 40
                     ? "linear-gradient(90deg, #fbbf24 0%, #fde047 100%)"
                     : "linear-gradient(90deg, #34d399 0%, #60a5fa 100%)",
-                transition:
-                  "width 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease",
                 borderRadius: "6px",
                 boxShadow:
                   driftGauge > 70

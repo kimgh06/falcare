@@ -63,6 +63,39 @@ function Scene() {
   const boxPositionRef = useRef(new Vector3());
   const htmlContentRef = useRef<HTMLDivElement>(null);
 
+  // 차량 위치 초기화 함수를 window에 노출
+  useEffect(() => {
+    (window as any).resetCarPosition = () => {
+      if (carRef.current?.rigidBodyRef.current) {
+        const rigidBody = carRef.current.rigidBodyRef.current;
+        const startPosition = SAVE_POINT_POSITIONS[0];
+        rigidBody.setTranslation(
+          { x: startPosition[0], y: startPosition[1], z: startPosition[2] },
+          true
+        );
+        rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        rigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+        // 회전도 초기화
+        const rotationY = startPosition[3] ?? 0;
+        const quaternion = new Quaternion().setFromEuler(
+          new Euler(0, rotationY, 0)
+        );
+        rigidBody.setRotation(
+          {
+            x: quaternion.x,
+            y: quaternion.y,
+            z: quaternion.z,
+            w: quaternion.w,
+          },
+          true
+        );
+      }
+    };
+    return () => {
+      delete (window as any).resetCarPosition;
+    };
+  }, []);
+
   // useFrame에서 재사용할 객체들 (가비지 컬렉션 방지)
   const tempVector = useRef(new Vector3());
   const tempQuaternion = useRef(new Quaternion());

@@ -1,8 +1,6 @@
 import { useFrame, useThree } from "@react-three/fiber";
-import { CuboidCollider, RigidBody } from "@react-three/rapier";
 import { useEffect, useRef, useMemo } from "react";
-import { Vector3, Quaternion, Euler, Object3D } from "three";
-import { Box } from "@react-three/drei";
+import { Vector3, Euler, Object3D } from "three";
 import MapFloor from "~/src/entities/floor";
 import Map from "~/src/entities/map";
 import GhostCar, { type GhostCarHandle } from "~/src/entities/ghost-car";
